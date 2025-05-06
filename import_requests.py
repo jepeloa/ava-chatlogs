@@ -19,8 +19,8 @@ def print_highlight(message):
 # Authenticate and get the token
 auth_url = f"{HOST_URL}/api/v1/auths/signin"
 auth_payload = {
-    "email": "admin@mapply.com",
-    "password": "11235813"
+    "email": "mail",
+    "password": "password"
 }
 
 def main():
@@ -61,6 +61,7 @@ def main():
         chats_response = requests.get(chats_url, headers=headers)
         chats_response.raise_for_status()  # Check if the request fails
         chats_data = chats_response.json()
+        print(chats_data)
 
         # Step 3: Make the request to get user ID
         user_id_url = f"{HOST_URL}/api/v1/users/?skip=0&limit=50"
@@ -85,11 +86,10 @@ def main():
         if isinstance(chats_data, list):
             chats_data = {"chats": chats_data}  # Convert list to dictionary with a key "chats"
 
-        # Include the users' information in the chats data
-        chats_data["users"] = users_info
-
-        # Filter chats data to include only 'user' and 'assistant' roles with their content
+        # Filtrar chats para incluir solo el nombre de usuario y history (solo mensajes)
         filtered_chats = []
+        # Crear un diccionario para mapear user_id a nombre
+        user_id_to_name = {user["id"]: user["name"] for user in users_info}
         for chat in chats_data.get("chats", []):
             filtered_history = {
                 "messages": {}
@@ -98,28 +98,19 @@ def main():
                 if message.get("role") in ["user", "assistant"]:
                     filtered_history["messages"][message_id] = {
                         "role": message.get("role"),
-                        "content": message.get("content")
+                        "content": message.get("content"),
+                        "date": message.get("timestamp") if message.get("timestamp") else None
                     }
 
             if filtered_history["messages"]:
+                user_name = user_id_to_name.get(chat.get("user_id"), "Desconocido")
                 filtered_chats.append({
-                    "id": chat.get("id"),
-                    "user_id": chat.get("user_id"),
-                    "title": chat.get("title"),
-                    "chat": {
-                        "id": chat.get("chat", {}).get("id"),
-                        "title": chat.get("chat", {}).get("title"),
-                        "history": filtered_history
-                    }
+                    "user_name": user_name,
+                    "history": filtered_history
                 })
 
-        # Update chats_data with filtered chats
+        # Actualizar chats_data solo con los campos requeridos
         chats_data["chats"] = filtered_chats
-
-        # Map user names from users_info to chats_data
-        user_id_to_name = {user["id"]: user["name"] for user in users_info}
-        for chat in chats_data["chats"]:
-            chat["user_name"] = user_id_to_name.get(chat["user_id"], "Unknown")
 
         return chats_data
 
@@ -133,8 +124,8 @@ if __name__ == "__main__":
         chats_data = main()
         print_highlight("Final filtered chats data with content:")
         for chat in chats_data["chats"]:
-            print(f"Chat ID: {chat['id']}, Title: {chat['title']}, User Name: {chat['user_name']}")
-            for message_id, message in chat["chat"]["history"]["messages"].items():
+            print(f"User Name: {chat['user_name']}")
+            for message_id, message in chat["history"]["messages"].items():
                 print(f"  Message ID: {message_id}, Role: {message['role']}, Content: {message['content']}")
     except Exception as e:
         print_highlight(str(e))

@@ -10,38 +10,6 @@ import import_requests
 BLUE_BOLD = "\033[1;34m"
 RESET = "\033[0m"
 
-def print_highlight(message):
-    print(f"\n{BLUE_BOLD}{message}{RESET}")
-
-# Authenticate and get the token
-auth_url = "https://sc.mapplyia.com/api/v1/auths/signin"
-auth_payload = {
-    "email": "admin@mapply.com",
-    "password": "11235813"
-}
-
-try:
-    auth_response = requests.post(auth_url, json=auth_payload)
-    auth_response.raise_for_status()  # Check if authentication fails
-    token = auth_response.json().get("token")
-    
-    if not token:
-        raise ValueError("Token not found in response")
-    
-    print_highlight(f"Authentication successful, Token: {token}")
-
-    # Use this token in headers for subsequent requests
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
-
-except requests.RequestException as e:
-    print_highlight(f"Authentication request failed: {e}")
-    sys.exit(1)
-except ValueError as e:
-    print_highlight(f"Authentication failed: {e}")
-    sys.exit(1)
 
 app = FastAPI()
 
